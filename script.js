@@ -5,7 +5,7 @@ const CONFIG = {
     owner: 'SpaceDepot',        // Your GitHub username
     repo: 'rivals-depot',       // The repository name where the USMAP files are stored
     branch: 'main',             // Branch name (usually 'main' or 'master')
-    path: ''                    // Path to the folder containing .usmap files (leave empty string if in root)
+    path: 'usmap'               // Path to the folder containing .usmap files
 };
 // ============================================
 
@@ -28,6 +28,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+    };
+
+    // Helper to extract the build number from filenames like "5.3.2-3048385+++..."
+    const getBuildNumber = (filename) => {
+        const match = filename.match(/\d+\.\d+\.\d+-(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
     };
 
     const fetchLatestUSMAP = async () => {
@@ -59,9 +65,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('No .usmap files found in the specified repository path.');
             }
 
-            // Get the latest one (we can sort by name or just take the first if it's always the latest)
-            // Sorting alphabetically descending assuming version numbers in the name
-            usmapFiles.sort((a, b) => b.name.localeCompare(a.name));
+            // Smartly sort by build number extracted from the filename (descending)
+            usmapFiles.sort((a, b) => {
+                const buildA = getBuildNumber(a.name);
+                const buildB = getBuildNumber(b.name);
+                
+                if (buildB !== buildA) {
+                    return buildB - buildA; // Highest build numbers first
+                }
+                
+                // If same build number, sort alphabetically to have a predictable order
+                return a.name.localeCompare(b.name);
+            });
             
             const latestFile = usmapFiles[0];
             currentDownloadUrl = latestFile.download_url;
