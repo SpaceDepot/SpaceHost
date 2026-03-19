@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvel Rivals | USMAP Downloader</title>
+    <meta name="description" content="Download the latest Marvel Rivals USMAP files effortlessly.">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <div class="logo-icon"></div>
+                <h1>Marvel Rivals <span>USMAPs</span></h1>
+            </div>
+            <p>Your simple, secure source for the latest USMAP files.</p>
+        </header>
+
+        <main>
+            <div class="glass-card" id="downloader-card">
+                <h2>Latest Release</h2>
+                
+                <div id="status-container" class="status-container loading">
+                    <div class="spinner"></div>
+                    <p id="status-text">Fetching latest files from GitHub...</p>
+                </div>
+
+                <div id="file-info" class="file-info hidden">
+                    <div class="file-details">
+                        <span class="file-icon">📄</span>
+                        <div class="text-details">
+                            <h3 id="filename">marvel_rivals_latest.usmap</h3>
+                            <p id="filemeta">Size: Calculating... • Updated: Just now</p>
+                        </div>
+                    </div>
+                    
+                    <button id="download-btn" class="primary-btn">
+                        <span class="btn-text">Download Now</span>
+                        <span class="btn-icon">⬇</span>
+                    </button>
+                </div>
+
+                <div id="error-container" class="error-container hidden">
+                    <div class="error-icon">⚠️</div>
+                    <p id="error-text">Failed to fetch files. Please check the repository settings.</p>
+                    <button id="retry-btn" class="secondary-btn">Try Again</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Hosted securely via GitHub Pages • Open Source</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
