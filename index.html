@@ -15,16 +15,27 @@
 
         <div class="terminal-window">
             <div class="terminal-titlebar">
-                <span>SPACE_HOST</span>
+                <span>MRM_ARCHIVE</span>
                 <span class="terminal-controls">[ _ ] [ X ]</span>
             </div>
 
             <div class="terminal-content">
-
+                <div class="menu-section">
+                    <h2>FILES MENU:</h2>
+                    <ul>
+                        <li id="tab-mappings" class="active" style="cursor: pointer;"><span class="bracket">[</span>
+                            MAPPINGS <span class="bracket">]</span></li>
+                        <li id="tab-materialtag" style="cursor: pointer;"><span class="bracket">[</span> MATERIALTAG
+                            <span class="bracket">]</span>
+                        </li>
+                        <li><span class="bracket">[</span> --- <span class="bracket">]</span></li>
+                        <li><span class="bracket">[</span> --- <span class="bracket">]</span></li>
+                    </ul>
+                </div>
 
                 <div class="main-section">
                     <div class="dashed-box">
-                        <div class="box-title">- LATEST USMAP -</div>
+                        <div id="box-title" class="box-title">- LATEST USMAP -</div>
 
                         <div id="status-container" class="status-container loading">
                             <span class="spinner">wait...</span>
