@@ -24,7 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab Elements
     const tabMappings = document.getElementById('tab-mappings');
     const tabMaterialTag = document.getElementById('tab-materialtag');
+    const tabSocketTool = document.getElementById('tab-sockettool');
     const boxTitle = document.getElementById('box-title');
+
+    // Modal Elements
+    const socketModal = document.getElementById('sockettool-modal');
+    const closeSocketModal = document.getElementById('close-sockettool');
 
     let currentDownloadUrl = null;
     let currentTab = 'mappings'; // 'mappings' or 'materialtag'
@@ -55,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let targetFileObj = null;
 
             if (currentTab === 'mappings') {
-                boxTitle.textContent = '- LATEST USMAP -';
+                boxTitle.textContent = 'LATEST USMAP';
                 const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.mappingsPath}?ref=${CONFIG.branch}`;
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error(`API returned ${response.status}`);
@@ -76,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetFileObj = usmapFiles[0];
 
             } else if (currentTab === 'materialtag') {
-                boxTitle.textContent = '- MATERIALTAG PRESETS FILE -';
+                boxTitle.textContent = 'MATERIALTAG PRESETS';
                 const apiUrl = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.materialPath}?ref=${CONFIG.branch}`;
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error(`API returned ${response.status}`);
@@ -139,6 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tabMappings.addEventListener('click', () => switchTab('mappings'));
     tabMaterialTag.addEventListener('click', () => switchTab('materialtag'));
+
+    tabSocketTool.addEventListener('click', () => {
+        socketModal.classList.remove('hidden');
+    });
+
+    closeSocketModal.addEventListener('click', () => {
+        socketModal.classList.add('hidden');
+    });
 
     downloadBtn.addEventListener('click', async () => {
         if (!currentDownloadUrl) return;

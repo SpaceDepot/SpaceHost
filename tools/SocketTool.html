@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UE Socket Converter by Rat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            /* Black background */
+        }
+
+        .container {
+            max-width: 800px;
+        }
+
+        textarea {
+            min-height: 250px;
+        }
+    </style>
+</head>
+
+<body class="bg-black text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Main container for the tool -->
+    <div class="container mx-auto p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
+        <h1 class="text-4xl font-extrabold mb-6 text-center text-teal-400">UE Socket Converter <span
+                class="text-lg font-medium text-teal-200">by Rat</span></h1>
+        <div class="text-center text-gray-400 mb-8 text-sm space-y-2">
+            <p>Export the skeleton with the sockets you need from MR in FModel as a JSON.</p>
+            <p>Choose the JSON, right-click your skeleton in UE to 'Copy Reference', and paste it in the text line.</p>
+            <p>Click <strong class="text-teal-300">Generate Socket Buffer</strong> to create your list.</p>
+            <p>That is all! Simply copy the generated text and paste it into your UE skeleton as sockets.</p>
+        </div>
+
+        <!-- Form for user inputs -->
+        <form id="converter-form" class="space-y-6">
+            <div>
+                <label for="jsonFile" class="block text-sm font-medium text-gray-300 mb-2">JSON File</label>
+                <input type="file" id="jsonFile" name="jsonFile" accept=".json" required class="block w-full text-sm text-gray-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-violet-50 file:text-violet-700
+                    hover:file:bg-violet-100
+                    hover:cursor-pointer
+                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 rounded-xl" />
+            </div>
+
+            <div>
+                <label for="skeletonPathInput" class="block text-sm font-medium text-gray-300 mb-2">UE Skeleton
+                    Reference</label>
+                <input type="text" id="skeletonPathInput" name="skeletonPathInput" required
+                    placeholder="/Script/Engine.Skeleton'/Game/Path/To/Your/Skeleton.SK_MySkeleton'" class="block w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-500
+                    focus:outline-none focus:ring-2 focus:ring-teal-400" />
+            </div>
+
+            <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl
+                transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                Generate Socket Buffer
+            </button>
+        </form>
+
+        <!-- Section to display the output -->
+        <div id="output-section" class="hidden mt-8">
+            <h2 class="text-2xl font-bold mb-4 text-teal-300">Generated Text</h2>
+            <div class="relative">
+                <textarea id="output-text" class="w-full p-4 bg-gray-900 border border-gray-600 rounded-xl
+                    font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    readonly></textarea>
+                <button id="copy-button" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-gray-300
+                    text-xs font-semibold py-1.5 px-3 rounded-lg transition duration-200">
+                    Copy
+                </button>
+            </div>
+            <div id="status-message" class="mt-2 text-center text-sm font-medium"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all necessary DOM elements
+            const form = document.getElementById('converter-form');
+            const jsonFileEl = document.getElementById('jsonFile');
+            const skeletonPathInputEl = document.getElementById('skeletonPathInput');
+            const outputSection = document.getElementById('output-section');
+            const outputTextarea = document.getElementById('output-text');
+            const copyButton = document.getElementById('copy-button');
+            const statusMessage = document.getElementById('status-message');
+
+            /**
+             * Handles the form submission event.
+             * @param {Event} event - The form submission event.
+             */
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                // Clear previous output and status
+                outputTextarea.value = '';
+                statusMessage.textContent = '';
+                outputSection.classList.add('hidden');
+
+                const file = jsonFileEl.files[0];
+                const skeletonPathReference = skeletonPathInputEl.value.trim();
+
+                if (!file || !skeletonPathReference) {
+                    statusMessage.textContent = 'Please select a JSON file and enter the skeleton reference.';
+                    statusMessage.classList.add('text-red-400');
+                    return;
+                }
+
+                // New logic: Parse the full reference to get the actual path
+                const pathMatch = skeletonPathReference.match(/'(.*?)'/);
+                let skeletonPath;
+                if (pathMatch && pathMatch[1]) {
+                    skeletonPath = pathMatch[1];
+                } else {
+                    statusMessage.textContent = 'Error: The skeleton reference format is incorrect. Please ensure it is in the format "/Script/Engine.Skeleton\'/Game/...SK_MySkeleton\'"';
+                    statusMessage.classList.remove('text-green-400');
+                    statusMessage.classList.add('text-red-400');
+                    return;
+                }
+
+                // Use FileReader to read the file content
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    try {
+                        const jsonData = JSON.parse(content);
+                        const output = generateSocketBuffer(jsonData, skeletonPath);
+                        outputTextarea.value = output;
+                        outputSection.classList.remove('hidden');
+                        statusMessage.textContent = 'Successfully generated the socket buffer!';
+                        statusMessage.classList.remove('text-red-400');
+                        statusMessage.classList.add('text-green-400');
+                    } catch (error) {
+                        console.error('Error processing JSON file:', error);
+                        statusMessage.textContent = `Error: Could not process file. Is it a valid JSON? Details: ${error.message}`;
+                        statusMessage.classList.remove('text-green-400');
+                        statusMessage.classList.add('text-red-400');
+                    }
+                };
+                reader.onerror = (error) => {
+                    console.error('Error reading file:', error);
+                    statusMessage.textContent = 'Error reading the file. Please try again.';
+                    statusMessage.classList.remove('text-green-400');
+                    statusMessage.classList.add('text-red-400');
+                };
+                reader.readAsText(file);
+            });
+
+            /**
+             * Generates the Unreal Engine socket buffer string from JSON data.
+             * @param {Array|Object} jsonData - The parsed JSON data.
+             * @param {string} skeletonPath - The UE skeleton path.
+             * @returns {string} The formatted socket buffer string.
+             */
+            function generateSocketBuffer(jsonData, skeletonPath) {
+                const sockets = [];
+                // Check if jsonData is an array, otherwise assume it's an object with a property containing the array
+                const dataArray = Array.isArray(jsonData) ? jsonData : findSocketArray(jsonData);
+                if (!dataArray || !Array.isArray(dataArray)) {
+                    throw new Error("Could not find an array of socket data in the JSON.");
+                }
+
+                dataArray.forEach(item => {
+                    // Check if the object is a socket based on the user's example
+                    if (item && item.Type === "SkeletalMeshSocket" && item.Properties) {
+                        sockets.push(item);
+                    }
+                });
+
+                // If no sockets were found, return a message
+                if (sockets.length === 0) {
+                    return `SocketCopyPasteBuffer\nNumSockets=0\n\nNo sockets of type "SkeletalMeshSocket" were found in the provided JSON file.`;
+                }
+
+                let buffer = `SocketCopyPasteBuffer\nNumSockets=${sockets.length}\n\n`;
+
+                sockets.forEach((socket, index) => {
+                    const properties = socket.Properties;
+                    const socketName = properties.SocketName || 'UnnamedSocket';
+                    const boneName = properties.BoneName || 'root';
+                    const location = properties.RelativeLocation || { X: 0, Y: 0, Z: 0 };
+                    const rotation = properties.RelativeRotation || { Pitch: 0, Yaw: 0, Roll: 0 };
+                    const scale = properties.RelativeScale || { X: 1, Y: 1, Z: 1 };
+
+                    // Format the output string for each socket
+                    buffer += `IsOnSkeleton=1\n`;
+                    buffer += `Begin Object Class=/Script/Engine.SkeletalMeshSocket Name="SkeletalMeshSocket_${index}" ExportPath="/Script/Engine.SkeletalMeshSocket'${skeletonPath}:SkeletalMeshSocket_${index}'"\n`;
+                    buffer += `\tSocketName="${socketName}"\n`;
+                    buffer += `\tBoneName="${boneName}"\n`;
+                    buffer += `\tRelativeLocation=(X=${location.X.toFixed(6)},Y=${location.Y.toFixed(6)},Z=${location.Z.toFixed(6)})\n`;
+                    // Check if rotation properties exist before adding
+                    if (properties.RelativeRotation) {
+                        buffer += `\tRelativeRotation=(Pitch=${rotation.Pitch.toFixed(6)},Yaw=${rotation.Yaw.toFixed(6)},Roll=${rotation.Roll.toFixed(6)})\n`;
+                    }
+                    // Check if scale properties exist before adding
+                    if (properties.RelativeScale) {
+                        buffer += `\tRelativeScale=(X=${scale.X.toFixed(6)},Y=${scale.Y.toFixed(6)},Z=${scale.Z.toFixed(6)})\n`;
+                    }
+                    buffer += `End Object\n`;
+                    buffer += `\n`;
+                });
+
+                return buffer.trim();
+            }
+
+            /**
+             * Recursively searches for an array of socket objects in a given JSON object.
+             * This handles cases where the main data isn't a top-level array.
+             * @param {Object} obj - The JSON object to search.
+             * @returns {Array|null} The array of socket objects, or null if not found.
+             */
+            function findSocketArray(obj) {
+                if (obj === null || typeof obj !== 'object') {
+                    return null;
+                }
+                if (Array.isArray(obj)) {
+                    // Check if this array contains a socket object
+                    if (obj.some(item => item && item.Type === "SkeletalMeshSocket")) {
+                        return obj;
+                    }
+                }
+                for (const key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                        const found = findSocketArray(obj[key]);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            // Handles the copy button click
+            copyButton.addEventListener('click', () => {
+                try {
+                    outputTextarea.select();
+                    document.execCommand('copy'); // Use document.execCommand for better compatibility
+                    statusMessage.textContent = 'Text copied to clipboard!';
+                    statusMessage.classList.remove('text-red-400');
+                    statusMessage.classList.add('text-green-400');
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    statusMessage.textContent = 'Failed to copy text. Please copy manually.';
+                    statusMessage.classList.remove('text-green-400');
+                    statusMessage.classList.add('text-red-400');
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>
