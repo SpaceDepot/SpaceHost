@@ -10,6 +10,32 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    scrollbar-width: auto;
+    scrollbar-color: var(--border-color) var(--bg-color);
+}
+
+/* Custom retro scrollbar for Webkit browsers */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+    border-left: 1px dashed var(--border-color);
+    border-top: 1px dashed var(--border-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--highlight-bg);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--bg-color);
 }
 
 body {

@@ -5,80 +5,191 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UE Socket Converter by Rat</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../style.css">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        /* Tool-specific styles that extend the retro theme */
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #000000;
-            /* Black background */
+        html {
+            /* Full height to allow centering */
+            height: 100%;
+            overflow-y: auto;
         }
 
-        .container {
+        body {
+            /* Revert to center alignment but ensure safe overflow */
+            min-height: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tool-container {
+            width: 100%;
             max-width: 800px;
+            margin: auto;
+        }
+
+        .dashed-box {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: stretch;
+        }
+
+        .instructions {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 1.5rem;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            outline: none;
+        }
+
+        input[type="file"]::file-selector-button {
+            border: 2px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            padding: 0.25rem 0.5rem;
+            margin-right: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        input[type="file"]::file-selector-button:hover,
+        input[type="file"]::file-selector-button:active {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+        }
+
+        input[type="text"]:focus {
+            background-color: rgba(219, 255, 255, 0.1);
         }
 
         textarea {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            padding: 1rem;
             min-height: 250px;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 0.5rem;
+        }
+
+        .output-wrapper {
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+        }
+
+        .status-msg {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+            min-height: 1.5rem;
+        }
+
+        .text-error {
+            color: #ff5555;
+            text-shadow: 0 0 5px #ff5555;
+        }
+
+        .text-success {
+            color: #55ff55;
+            text-shadow: 0 0 5px #55ff55;
         }
     </style>
 </head>
 
-<body class="bg-black text-gray-100 flex items-center justify-center min-h-screen p-4">
+<body>
 
     <!-- Main container for the tool -->
-    <div class="container mx-auto p-8 bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
-        <h1 class="text-4xl font-extrabold mb-6 text-center text-teal-400">UE Socket Converter <span
-                class="text-lg font-medium text-teal-200">by Rat</span></h1>
-        <div class="text-center text-gray-400 mb-8 text-sm space-y-2">
-            <p>Export the skeleton with the sockets you need from MR in FModel as a JSON.</p>
-            <p>Choose the JSON, right-click your skeleton in UE to 'Copy Reference', and paste it in the text line.</p>
-            <p>Click <strong class="text-teal-300">Generate Socket Buffer</strong> to create your list.</p>
-            <p>That is all! Simply copy the generated text and paste it into your UE skeleton as sockets.</p>
-        </div>
+    <div class="tool-container">
+        <div class="dashed-box">
+            <div class="box-title">UE SOCKET CONVERTER BY RAT</div>
 
-        <!-- Form for user inputs -->
-        <form id="converter-form" class="space-y-6">
-            <div>
-                <label for="jsonFile" class="block text-sm font-medium text-gray-300 mb-2">JSON File</label>
-                <input type="file" id="jsonFile" name="jsonFile" accept=".json" required class="block w-full text-sm text-gray-400
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-violet-50 file:text-violet-700
-                    hover:file:bg-violet-100
-                    hover:cursor-pointer
-                    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 rounded-xl" />
+            <div class="instructions">
+                <p>▪ Export the skeleton with the sockets you need from MR in FModel as a JSON.</p>
+                <p>▪ Choose the JSON, right-click your skeleton in UE -> 'Copy Reference', paste below.</p>
+                <p>▪ Click <span
+                        style="background: var(--highlight-bg); color: var(--highlight-text); padding: 0 5px;">GENERATE</span>
+                    to create your list.</p>
+                <p>▪ Simply copy the generated text and paste into your UE skeleton.</p>
             </div>
 
-            <div>
-                <label for="skeletonPathInput" class="block text-sm font-medium text-gray-300 mb-2">UE Skeleton
-                    Reference</label>
-                <input type="text" id="skeletonPathInput" name="skeletonPathInput" required
-                    placeholder="/Script/Engine.Skeleton'/Game/Path/To/Your/Skeleton.SK_MySkeleton'" class="block w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-500
-                    focus:outline-none focus:ring-2 focus:ring-teal-400" />
-            </div>
+            <!-- Form for user inputs -->
+            <form id="converter-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div class="form-group">
+                    <label for="jsonFile">JSON FILE: <span style="font-size: 1.1rem; opacity: 0.7;">(OR DRAG &
+                            DROP)</span></label>
+                    <input type="file" id="jsonFile" name="jsonFile" accept=".json" required />
+                </div>
 
-            <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl
-                transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
-                Generate Socket Buffer
-            </button>
-        </form>
+                <div class="form-group">
+                    <label for="skeletonPathInput">UE SKELETON REFERENCE:</label>
+                    <input type="text" id="skeletonPathInput" name="skeletonPathInput" required
+                        placeholder="/SCRIPT/ENGINE.SKELETON'/GAME/PATH/SK_MYSKELETON'" />
+                </div>
 
-        <!-- Section to display the output -->
-        <div id="output-section" class="hidden mt-8">
-            <h2 class="text-2xl font-bold mb-4 text-teal-300">Generated Text</h2>
-            <div class="relative">
-                <textarea id="output-text" class="w-full p-4 bg-gray-900 border border-gray-600 rounded-xl
-                    font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400"
-                    readonly></textarea>
-                <button id="copy-button" class="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-gray-300
-                    text-xs font-semibold py-1.5 px-3 rounded-lg transition duration-200">
-                    Copy
+                <button type="submit" class="primary-btn">
+                    > GENERATE SOCKET BUFFER &lt;
                 </button>
+            </form>
+
+            <div id="status-message" class="status-msg"></div>
+
+            <!-- Section to display the output -->
+            <div id="output-section" class="hidden" style="margin-top: 1rem;">
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">GENERATED TEXT:</h2>
+                <div class="output-wrapper">
+                    <textarea id="output-text" readonly></textarea>
+                    <button id="copy-button" class="copy-btn">COPY</button>
+                </div>
             </div>
-            <div id="status-message" class="mt-2 text-center text-sm font-medium"></div>
         </div>
     </div>
 
@@ -110,7 +221,7 @@
 
                 if (!file || !skeletonPathReference) {
                     statusMessage.textContent = 'Please select a JSON file and enter the skeleton reference.';
-                    statusMessage.classList.add('text-red-400');
+                    statusMessage.classList.add('text-error');
                     return;
                 }
 
@@ -121,8 +232,8 @@
                     skeletonPath = pathMatch[1];
                 } else {
                     statusMessage.textContent = 'Error: The skeleton reference format is incorrect. Please ensure it is in the format "/Script/Engine.Skeleton\'/Game/...SK_MySkeleton\'"';
-                    statusMessage.classList.remove('text-green-400');
-                    statusMessage.classList.add('text-red-400');
+                    statusMessage.classList.remove('text-success');
+                    statusMessage.classList.add('text-error');
                     return;
                 }
 
@@ -136,20 +247,20 @@
                         outputTextarea.value = output;
                         outputSection.classList.remove('hidden');
                         statusMessage.textContent = 'Successfully generated the socket buffer!';
-                        statusMessage.classList.remove('text-red-400');
-                        statusMessage.classList.add('text-green-400');
+                        statusMessage.classList.remove('text-error');
+                        statusMessage.classList.add('text-success');
                     } catch (error) {
                         console.error('Error processing JSON file:', error);
                         statusMessage.textContent = `Error: Could not process file. Is it a valid JSON? Details: ${error.message}`;
-                        statusMessage.classList.remove('text-green-400');
-                        statusMessage.classList.add('text-red-400');
+                        statusMessage.classList.remove('text-success');
+                        statusMessage.classList.add('text-error');
                     }
                 };
                 reader.onerror = (error) => {
                     console.error('Error reading file:', error);
                     statusMessage.textContent = 'Error reading the file. Please try again.';
-                    statusMessage.classList.remove('text-green-400');
-                    statusMessage.classList.add('text-red-400');
+                    statusMessage.classList.remove('text-success');
+                    statusMessage.classList.add('text-error');
                 };
                 reader.readAsText(file);
             });
@@ -244,13 +355,13 @@
                     outputTextarea.select();
                     document.execCommand('copy'); // Use document.execCommand for better compatibility
                     statusMessage.textContent = 'Text copied to clipboard!';
-                    statusMessage.classList.remove('text-red-400');
-                    statusMessage.classList.add('text-green-400');
+                    statusMessage.classList.remove('text-error');
+                    statusMessage.classList.add('text-success');
                 } catch (err) {
                     console.error('Failed to copy text: ', err);
                     statusMessage.textContent = 'Failed to copy text. Please copy manually.';
-                    statusMessage.classList.remove('text-green-400');
-                    statusMessage.classList.add('text-red-400');
+                    statusMessage.classList.remove('text-success');
+                    statusMessage.classList.add('text-error');
                 }
             });
         });
