@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimBP Chain Converter</title>
+    <link rel="stylesheet" href="../style.css">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        html {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        body {
+            min-height: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tool-container {
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .dashed-box {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: stretch;
+        }
+
+        .instructions {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 1.5rem;
+        }
+
+        input[type="file"],
+        input[type="text"] {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            outline: none;
+        }
+
+        input[type="file"]::file-selector-button {
+            border: 2px solid var(--border-color);
+            background: transparent;
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            padding: 0.25rem 0.5rem;
+            margin-right: 1rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            padding: 1rem;
+            min-height: 250px;
+            resize: vertical;
+            outline: none;
+            margin-bottom: 0.5rem;
+        }
+
+        .output-wrapper {
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1rem;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--highlight-bg);
+            color: var(--highlight-text);
+        }
+
+        .status-msg {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+            min-height: 1.5rem;
+        }
+
+        .text-error {
+            color: #ff5555;
+            text-shadow: 0 0 5px #ff5555;
+        }
+
+        .text-success {
+            color: #55ff55;
+            text-shadow: 0 0 5px #55ff55;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tool-container">
+        <div class="dashed-box">
+            <div class="box-title">ANIMBP CHAIN CONVERTER</div>
+            <div class="box-title" style="left: auto; right: 1rem; font-size: 0.9rem; top: -0.5rem;">BY ADDICTED</div>
+
+            <div class="instructions">
+                <p>▪ Export the AnimBP from MR in FModel as a JSON.</p>
+                <p>▪ Choose the JSON file below.</p>
+                <p>▪ Click <span
+                        style="background: var(--highlight-bg); color: var(--highlight-text); padding: 0 5px;">GENERATE</span>
+                    to create your node list.</p>
+                <p>▪ Copy the generated text and paste into your UE Anim Blueprint.</p>
+            </div>
+
+            <form id="converter-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div class="form-group">
+                    <label for="jsonFile">JSON FILE: <span style="font-size: 1.1rem; opacity: 0.7;">(OR DRAG &
+                            DROP)</span></label>
+                    <input type="file" id="jsonFile" accept=".json" required />
+                </div>
+                <button type="submit" class="primary-btn">> GENERATE NODES &lt;</button>
+            </form>
+
+            <div id="status-message" class="status-msg"></div>
+
+            <div id="output-section" class="hidden" style="margin-top: 1rem;">
+                <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">GENERATED TEXT:</h2>
+                <div class="output-wrapper">
+                    <textarea id="output-text" readonly></textarea>
+                    <button id="copy-button" class="copy-btn">COPY</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('converter-form');
+            const jsonFileEl = document.getElementById('jsonFile');
+            const outputSection = document.getElementById('output-section');
+            const outputTextarea = document.getElementById('output-text');
+            const copyButton = document.getElementById('copy-button');
+            const statusMessage = document.getElementById('status-message');
+
+            function setStatus(msg, isError = false) {
+                statusMessage.textContent = msg;
+                if (isError) {
+                    statusMessage.classList.add('text-error');
+                    statusMessage.classList.remove('text-success');
+                } else {
+                    statusMessage.classList.add('text-success');
+                    statusMessage.classList.remove('text-error');
+                }
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                outputTextarea.value = '';
+                statusMessage.textContent = '';
+                outputSection.classList.add('hidden');
+
+                const file = jsonFileEl.files[0];
+                if (!file) {
+                    setStatus('Please select a JSON file.', true);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const jsonData = JSON.parse(e.target.result);
+                        const output = processAnimBP(jsonData);
+                        outputTextarea.value = output;
+                        outputSection.classList.remove('hidden');
+                        setStatus('Successfully generated AnimGraph nodes!');
+                    } catch (error) {
+                        console.error(error);
+                        setStatus(`Error: ${error.message}`, true);
+                    }
+                };
+                reader.onerror = () => setStatus('Error reading the file.', true);
+                reader.readAsText(file);
+            });
+
+            copyButton.addEventListener('click', () => {
+                try {
+                    outputTextarea.select();
+                    document.execCommand('copy');
+                    setStatus('Text copied to clipboard!');
+                } catch (err) {
+                    setStatus('Failed to copy text. Please copy manually.', true);
+                }
+            });
+
+            // Conversion Logic ported from AnimBP_Convert.ps1
+            function formatFloat(val) {
+                if (val === undefined || val === null) return "0.000000";
+                return Number(val).toFixed(6);
+            }
+
+            function newGuid() {
+                return 'xxxxxxxxxxxx4xxxyxxxxxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16).toUpperCase();
+                });
+            }
+
+            function formatCurveKeys(curve) {
+                if (curve && curve.EditorCurveData && curve.EditorCurveData.Keys && curve.EditorCurveData.Keys.length > 0) {
+                    const keyStrings = curve.EditorCurveData.Keys.map(k => `(Time=${formatFloat(k.Time)},Value=${formatFloat(k.Value)})`);
+                    return `EditorCurveData=(Keys=(${keyStrings.join(",")}))`;
+                }
+                return null;
+            }
+
+            function formatExternalLimits(limits, type) {
+                if (limits && limits.length > 0) {
+                    const formatted = limits.map(l => {
+                        const r = formatFloat(l.Radius);
+                        const len = formatFloat(l.Length);
+                        const bone = l.DrivingBone?.BoneName || "None";
+                        const ol = l.OffsetLocation || { X: 0, Y: 0, Z: 0 };
+                        const or = l.OffsetRotation || { Pitch: 0, Yaw: 0, Roll: 0 };
+                        return `(Radius=${r},Length=${len},DrivingBone=(BoneName="${bone}"),OffsetLocation=(X=${formatFloat(ol.X)},Y=${formatFloat(ol.Y)},Z=${formatFloat(ol.Z)}),OffsetRotation=(Pitch=${formatFloat(or.Pitch)},Yaw=${formatFloat(or.Yaw)},Roll=${formatFloat(or.Roll)}))`;
+                    });
+                    return `${type}=(${formatted.join(",")})`;
+                }
+                return null;
+            }
+
+            function formatLimitsDataAsset(asset) {
+                if (asset && asset.ObjectPath) {
+                    const path = asset.ObjectPath.replace(/\.0$/, "");
+                    const parts = asset.ObjectName.split("'");
+                    const shortName = parts.length >= 2 ? parts[parts.length - 2] : asset.ObjectName;
+                    return `LimitsDataAsset="/Script/KawaiiPhysics.KawaiiPhysicsLimitsDataAsset'${path}.${shortName}'"`;
+                }
+                return null;
+            }
+
+            function formatChain(chain) {
+                const bs = chain.BoneSettings || {};
+                const ps = chain.PhysicsSettings || {};
+
+                const rootBone = bs.RootBone?.BoneName || "None";
+                const dummyBoneLength = formatFloat(bs.DummyBoneLength);
+                const boneAxisParts = (bs.BoneForwardAxis || "").split("::");
+                const boneAxis = boneAxisParts[boneAxisParts.length - 1];
+
+                let excludePart = "";
+                if (bs.ExcludeBones && bs.ExcludeBones.length > 0) {
+                    const ex = bs.ExcludeBones.map(b => `(BoneName="${b.BoneName}")`);
+                    excludePart = `,ExcludeBones=(${ex.join(",")})`;
+                }
+
+                let arbPart = "";
+                if (bs.AdditionalRootBones && bs.AdditionalRootBones.length > 0) {
+                    const parts = bs.AdditionalRootBones.map(arb => `(RootBone=(BoneName="${arb.RootBone?.BoneName || "None"}"))`);
+                    arbPart = `,AdditionalRootBones=(${parts.join(",")})`;
+                }
+
+                const rootSimFlag = bs.bRootBoneSimulate ? ",bRootBoneSimulate=True" : "";
+                const fixTailFlag = bs.bShouldFixTailBone ? ",bShouldFixTailBone=True" : "";
+
+                let fixedBonePart = "";
+                if (bs.FixedBone && bs.FixedBone.BoneName && bs.FixedBone.BoneName !== "None") {
+                    fixedBonePart = `,FixedBone=(BoneName="${bs.FixedBone.BoneName}")`;
+                }
+
+                let followBonePart = "";
+                if (bs.FollowBone && bs.FollowBone.BoneName && bs.FollowBone.BoneName !== "None") {
+                    followBonePart = `,FollowBone=(BoneName="${bs.FollowBone.BoneName}")`;
+                }
+
+                const inner = ps.PhysicsSettings;
+                let physicsString = "";
+                if (inner) {
+                    physicsString = `Damping=${formatFloat(inner.Damping)},Stiffness=${formatFloat(inner.Stiffness)},WorldDampingLocation=${formatFloat(inner.WorldDampingLocation)},WorldDampingRotation=${formatFloat(inner.WorldDampingRotation)},Radius=${formatFloat(inner.Radius)},LimitAngle=${formatFloat(inner.LimitAngle)},LimitLinear=${formatFloat(inner.LimitLinear)},GravityScale=${formatFloat(inner.GravityScale)}`;
+                }
+
+                const tpdist = formatFloat(ps.TeleportDistanceThreshold);
+                const tprotate = formatFloat(ps.TeleportRotationThreshold);
+                const planarParts = (ps.PlanarConstraint || "").split("::");
+                const planar = planarParts[planarParts.length - 1];
+                const useCurve = ps.bUseCurve ? ",bUseCurve=True" : "";
+
+                const curveParts = [];
+                ["DampingCurveData", "StiffnessCurveData", "WorldDampingLocationCurveData", "WorldDampingRotationCurveData", "RadiusCurveData", "LimitAngleCurveData", "LimitLinearCurveData", "GravityCurveData"].forEach(curveName => {
+                    if (ps[curveName]) {
+                        const c = formatCurveKeys(ps[curveName]);
+                        if (c) curveParts.push(`${curveName}=(${c})`);
+                    }
+                });
+
+                let customShapesPart = "";
+                if (ps.CustomShapes && ps.CustomShapes.length > 0) {
+                    const shapes = ps.CustomShapes.map(s => {
+                        const sbone = s.DrivingBone?.BoneName || "None";
+                        const stypeParts = (s.ShapeType || "").split("::");
+                        const stype = stypeParts[stypeParts.length - 1];
+                        const halfH = formatFloat(s.HalfHeight);
+                        const sor = s.OffsetRotation || { Pitch: 0, Yaw: 0, Roll: 0 };
+                        return `(DrivingBone=(BoneName="${sbone}"),ShapeType=${stype},HalfHeight=${halfH},OffsetRotation=(Pitch=${formatFloat(sor.Pitch)},Yaw=${formatFloat(sor.Yaw)},Roll=${formatFloat(sor.Roll)}))`;
+                    });
+                    customShapesPart = `,CustomShapes=(${shapes.join(",")})`;
+                }
+
+                const curveExtra = curveParts.length > 0 ? "," + curveParts.join(",") : "";
+
+                const bcs = chain.BoneConstraintSettings || {};
+                const comptypeParts = (bcs.BoneConstraintGlobalComplianceType || "").split("::");
+                const comptype = comptypeParts[comptypeParts.length - 1];
+
+                const boneSettingsStr = `(RootBone=(BoneName="${rootBone}")${excludePart}${arbPart}${rootSimFlag}${fixTailFlag}${fixedBonePart}${followBonePart},DummyBoneLength=${dummyBoneLength},BoneForwardAxis=${boneAxis})`;
+                const physSettingsStr = `(PhysicsSettings=(${physicsString}),TeleportDistanceThreshold=${tpdist},TeleportRotationThreshold=${tprotate},PlanarConstraint=${planar}${useCurve}${customShapesPart}${curveExtra})`;
+                const boneConstraintStr = comptype ? `(BoneConstraintGlobalComplianceType=${comptype})` : `()`;
+
+                return `(BoneSettings=${boneSettingsStr},PhysicsSettings=${physSettingsStr},BoneConstraintSettings=${boneConstraintStr})`;
+            }
+
+            function formatKawaiiPhysicsNode(key, node, index, inGuid, outGuid, prevName, prevOutGuid, nextName, nextInGuid) {
+                const chains = (node.Chains || []).map(formatChain);
+                const chainsPart = `Chains=(${chains.join(",")})`;
+
+                const extraParts = [];
+                ["CapsuleLimits", "BoxLimits", "PlanarLimits", "SphericalLimits"].forEach(limitType => {
+                    if (node[limitType] && node[limitType].length > 0) {
+                        const c = formatExternalLimits(node[limitType], limitType);
+                        if (c) extraParts.push(c);
+                    }
+                });
+                if (node.LimitsDataAsset) {
+                    const lda = formatLimitsDataAsset(node.LimitsDataAsset);
+                    if (lda) extraParts.push(lda);
+                }
+
+                const extra = extraParts.length > 0 ? "," + extraParts.join(",") : "";
+
+                const row = index % 10;
+                const col = Math.floor(index / 10);
+                const posX = col * 400;
+                const posY = row * 144;
+
+                const inLinkedTo = prevName ? `,LinkedTo=(${prevName} ${prevOutGuid})` : "";
+                const outLinkedTo = nextName ? `,LinkedTo=(${nextName} ${nextInGuid})` : "";
+
+                return `Begin Object Class=/Script/KawaiiPhysicsEd.AnimGraphNode_KawaiiPhysics Name="${key}"
+   Node=(${chainsPart}${extra})
+   ShowPinForProperties(0)=(PropertyName="ComponentPose",bShowPin=True)
+   ShowPinForProperties(1)=(PropertyName="bAlphaBoolEnabled",bShowPin=True)
+   ShowPinForProperties(2)=(PropertyName="Alpha",bShowPin=True)
+   ShowPinForProperties(3)=(PropertyName="AlphaCurveName",bShowPin=True)
+   NodePosX=${posX}
+   NodePosY=${posY}
+   CustomProperties Pin (PinId=${inGuid},PinName="ComponentPose",PinFriendlyName="Component Pose",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${inLinkedTo})
+   CustomProperties Pin (PinId=${outGuid},PinName="Pose",Direction="EGPD_Output",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${outLinkedTo})
+End Object`;
+            }
+
+            function formatModifyBoneNode(key, node, index, inGuid, outGuid, prevName, prevOutGuid, nextName, nextInGuid) {
+                const bone = node.BoneToModify?.BoneName || "None";
+                const t = node.Translation || { X: 0, Y: 0, Z: 0 };
+                const r = node.Rotation || { Pitch: 0, Yaw: 0, Roll: 0 };
+                const s = node.Scale || { X: 1, Y: 1, Z: 1 };
+                const tmodeParts = (node.TranslationMode || "").split("::");
+                const tmode = tmodeParts[tmodeParts.length - 1];
+                const rmodeParts = (node.RotationMode || "").split("::");
+                const rmode = rmodeParts[rmodeParts.length - 1];
+                const smodeParts = (node.ScaleMode || "").split("::");
+                const smode = smodeParts[smodeParts.length - 1];
+                const tspaceParts = (node.TranslationSpace || "").split("::");
+                const tspace = tspaceParts[tspaceParts.length - 1];
+                const rspaceParts = (node.RotationSpace || "").split("::");
+                const rspace = rspaceParts[rspaceParts.length - 1];
+                const sspaceParts = (node.ScaleSpace || "").split("::");
+                const sspace = sspaceParts[sspaceParts.length - 1];
+
+                const row = index % 10;
+                const col = Math.floor(index / 10);
+                const posX = col * 400;
+                const posY = row * 144;
+
+                const inLinkedTo = prevName ? `,LinkedTo=(${prevName} ${prevOutGuid})` : "";
+                const outLinkedTo = nextName ? `,LinkedTo=(${nextName} ${nextInGuid})` : "";
+
+                return `Begin Object Class=/Script/AnimGraph.AnimGraphNode_ModifyBone Name="${key}"
+   Node=(BoneToModify=(BoneName="${bone}"),Translation=(X=${formatFloat(t.X)},Y=${formatFloat(t.Y)},Z=${formatFloat(t.Z)}),Rotation=(Pitch=${formatFloat(r.Pitch)},Yaw=${formatFloat(r.Yaw)},Roll=${formatFloat(r.Roll)}),Scale=(X=${formatFloat(s.X)},Y=${formatFloat(s.Y)},Z=${formatFloat(s.Z)}),TranslationMode=${tmode},RotationMode=${rmode},ScaleMode=${smode},TranslationSpace=${tspace},RotationSpace=${rspace},ScaleSpace=${sspace})
+   ShowPinForProperties(0)=(PropertyName="ComponentPose",bShowPin=True)
+   ShowPinForProperties(1)=(PropertyName="bAlphaBoolEnabled",bShowPin=True)
+   ShowPinForProperties(2)=(PropertyName="Alpha",bShowPin=True)
+   ShowPinForProperties(3)=(PropertyName="AlphaCurveName",bShowPin=True)
+   NodePosX=${posX}
+   NodePosY=${posY}
+   CustomProperties Pin (PinId=${inGuid},PinName="ComponentPose",PinFriendlyName="Component Pose",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${inLinkedTo})
+   CustomProperties Pin (PinId=${outGuid},PinName="Pose",Direction="EGPD_Output",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${outLinkedTo})
+End Object`;
+            }
+
+            function formatConstraintNode(key, node, index, inGuid, outGuid, prevName, prevOutGuid, nextName, nextInGuid) {
+                const bone = node.BoneToModify?.BoneName || "None";
+                const setupEntries = (node.ConstraintSetup || []).map(setup => {
+                    const targetBone = setup.TargetBone?.BoneName || "None";
+                    const offsetParts = (setup.OffsetOption || "").split("::");
+                    const offset = offsetParts[offsetParts.length - 1];
+                    const ttypeParts = (setup.TransformType || "").split("::");
+                    const ttype = ttypeParts[ttypeParts.length - 1];
+                    const px = setup.PerAxis?.bX ? "True" : "False";
+                    const py = setup.PerAxis?.bY ? "True" : "False";
+                    const pz = setup.PerAxis?.bZ ? "True" : "False";
+                    return `(TargetBone=(BoneName="${targetBone}"),OffsetOption=${offset},TransformType=${ttype},PerAxis=(bX=${px},bY=${py},bZ=${pz}))`;
+                });
+                const weights = (node.ConstraintWeights || []).map(formatFloat);
+
+                const row = index % 10;
+                const col = Math.floor(index / 10);
+                const posX = col * 400;
+                const posY = row * 144;
+
+                const inLinkedTo = prevName ? `,LinkedTo=(${prevName} ${prevOutGuid})` : "";
+                const outLinkedTo = nextName ? `,LinkedTo=(${nextName} ${nextInGuid})` : "";
+
+                return `Begin Object Class=/Script/AnimGraph.AnimGraphNode_Constraint Name="${key}"
+   Node=(BoneToModify=(BoneName="${bone}"),ConstraintSetup=(${setupEntries.join(",")}),ConstraintWeights=(${weights.join(",")}))
+   ShowPinForProperties(0)=(PropertyName="ComponentPose",bShowPin=True)
+   ShowPinForProperties(1)=(PropertyName="bAlphaBoolEnabled",bShowPin=True)
+   ShowPinForProperties(2)=(PropertyName="Alpha",bShowPin=True)
+   ShowPinForProperties(3)=(PropertyName="AlphaCurveName",bShowPin=True)
+   NodePosX=${posX}
+   NodePosY=${posY}
+   CustomProperties Pin (PinId=${inGuid},PinName="ComponentPose",PinFriendlyName="Component Pose",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${inLinkedTo})
+   CustomProperties Pin (PinId=${outGuid},PinName="Pose",Direction="EGPD_Output",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${outLinkedTo})
+End Object`;
+            }
+
+            function formatLayeredBoneBlendNode(key, node, index, inGuid, outGuid, prevName, prevOutGuid, nextName, nextInGuid) {
+                const layers = (node.LayerSetup || []).filter(l => l).map(layer => {
+                    const filters = (layer.BranchFilters || []).filter(f => f).map(f => {
+                        return `(BoneName="${f.BoneName || "None"}",BlendDepth=${parseInt(f.BlendDepth || 0)})`;
+                    });
+                    return `(BranchFilters=(${filters.join(",")}))`;
+                });
+                const layerSetup = `LayerSetup=(${layers.join(",")})`;
+                const meshSpaceRot = node.bMeshSpaceRotationBlend ? "True" : "False";
+                const meshSpaceScale = node.bMeshSpaceScaleBlend ? "True" : "False";
+                const curveBlendParts = (node.CurveBlendOption || "").split("::");
+                const curveBlend = curveBlendParts[curveBlendParts.length - 1];
+                const blendRoot = node.bBlendRootMotionBasedOnRootBone ? "True" : "False";
+
+                let weightsPart = "";
+                if (node.BlendWeights && node.BlendWeights.length > 0) {
+                    const w = node.BlendWeights.map(formatFloat);
+                    weightsPart = `,BlendWeights=(${w.join(",")})`;
+                }
+
+                const row = index % 10;
+                const col = Math.floor(index / 10);
+                const posX = col * 400;
+                const posY = row * 144;
+
+                const inLinkedTo = prevName ? `,LinkedTo=(${prevName} ${prevOutGuid})` : "";
+                const outLinkedTo = nextName ? `,LinkedTo=(${nextName} ${nextInGuid})` : "";
+
+                return `Begin Object Class=/Script/AnimGraph.AnimGraphNode_LayeredBoneBlend Name="${key}"
+   Node=(${layerSetup},bMeshSpaceRotationBlend=${meshSpaceRot},bMeshSpaceScaleBlend=${meshSpaceScale},CurveBlendOption=${curveBlend},bBlendRootMotionBasedOnRootBone=${blendRoot}${weightsPart})
+   NodePosX=${posX}
+   NodePosY=${posY}
+   CustomProperties Pin (PinId=${inGuid},PinName="ComponentPose",PinFriendlyName="Component Pose",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${inLinkedTo})
+   CustomProperties Pin (PinId=${outGuid},PinName="Pose",Direction="EGPD_Output",PinType.PinCategory="struct",PinType.PinSubCategoryObject="/Script/Engine.ComponentSpacePoseLink"${outLinkedTo})
+End Object`;
+            }
+
+            function processAnimBP(raw) {
+                let props = null;
+
+                if (Array.isArray(raw)) {
+                    for (const obj of raw) {
+                        if (obj.Properties) {
+                            const keys = Object.keys(obj.Properties);
+                            if (keys.some(k => k.startsWith("AnimGraphNode_"))) {
+                                props = obj.Properties;
+                                break;
+                            }
+                        }
+                    }
+                } else if (raw.Properties) {
+                    props = raw.Properties;
+                } else {
+                    props = raw;
+                }
+
+                if (!props) {
+                    throw new Error("Could not find any AnimGraph node properties in the JSON.");
+                }
+
+                const keys = Object.keys(props).filter(k => k.startsWith("AnimGraphNode_"));
+                if (keys.length === 0) {
+                    throw new Error("No recognised AnimGraph nodes found.");
+                }
+
+                const nodeList = [];
+
+                for (const key of keys) {
+                    const node = props[key];
+                    let type = null;
+
+                    if (key.startsWith("AnimGraphNode_KawaiiPhysics")) type = "Kawaii";
+                    else if (key.startsWith("AnimGraphNode_ModifyBone")) type = "ModifyBone";
+                    else if (key.startsWith("AnimGraphNode_Constraint")) type = "Constraint";
+                    else if (key.startsWith("AnimGraphNode_LayeredBoneBlend")) type = "LayeredBoneBlend";
+
+                    if (type) {
+                        nodeList.push({
+                            Key: key,
+                            Node: node,
+                            Type: type,
+                            InGuid: newGuid(),
+                            OutGuid: newGuid()
+                        });
+                    }
+                }
+
+                const output = [];
+
+                for (let i = 0; i < nodeList.length; i++) {
+                    const entry = nodeList[i];
+                    const prev = (i > 0) ? nodeList[i - 1] : null;
+                    const next = (i < nodeList.length - 1) ? nodeList[i + 1] : null;
+
+                    const prevName = prev ? prev.Key : null;
+                    const prevOutGuid = prev ? prev.OutGuid : null;
+                    const nextName = next ? next.Key : null;
+                    const nextInGuid = next ? next.InGuid : null;
+
+                    let block = "";
+                    switch (entry.Type) {
+                        case "Kawaii":
+                            block = formatKawaiiPhysicsNode(entry.Key, entry.Node, i, entry.InGuid, entry.OutGuid, prevName, prevOutGuid, nextName, nextInGuid);
+                            break;
+                        case "ModifyBone":
+                            block = formatModifyBoneNode(entry.Key, entry.Node, i, entry.InGuid, entry.OutGuid, prevName, prevOutGuid, nextName, nextInGuid);
+                            break;
+                        case "Constraint":
+                            block = formatConstraintNode(entry.Key, entry.Node, i, entry.InGuid, entry.OutGuid, prevName, prevOutGuid, nextName, nextInGuid);
+                            break;
+                        case "LayeredBoneBlend":
+                            block = formatLayeredBoneBlendNode(entry.Key, entry.Node, i, entry.InGuid, entry.OutGuid, prevName, prevOutGuid, nextName, nextInGuid);
+                            break;
+                    }
+                    if (block) {
+                        output.push(block);
+                    }
+                }
+
+                if (output.length === 0) {
+                    throw new Error("No recognised AnimGraph nodes could be processed.");
+                }
+
+                return output.join("\n\n");
+            }
+        });
+    </script>
+</body>
+
+</html>

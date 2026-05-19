@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modal Elements
     const socketModal = document.getElementById('sockettool-modal');
     const closeSocketModal = document.getElementById('close-sockettool');
+    const animBpModal = document.getElementById('animbp-modal');
+    const closeAnimBpModal = document.getElementById('close-animbp');
+    
+    // Additional Tab
+    const tabAnimBp = document.getElementById('tab-animbp-convert');
 
     let currentDownloadUrl = null;
     let currentTab = 'mappings'; // 'mappings' or 'materialtag'
@@ -152,6 +157,18 @@ document.addEventListener('DOMContentLoaded', () => {
     closeSocketModal.addEventListener('click', () => {
         socketModal.classList.add('hidden');
     });
+
+    if (tabAnimBp) {
+        tabAnimBp.addEventListener('click', () => {
+            animBpModal.classList.remove('hidden');
+        });
+    }
+
+    if (closeAnimBpModal) {
+        closeAnimBpModal.addEventListener('click', () => {
+            animBpModal.classList.add('hidden');
+        });
+    }
 
     downloadBtn.addEventListener('click', async () => {
         if (!currentDownloadUrl) return;

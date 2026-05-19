@@ -16,22 +16,25 @@
 
 /* Custom retro scrollbar for Webkit browsers */
 ::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
 }
 
 ::-webkit-scrollbar-track {
     background: var(--bg-color);
-    border-left: 1px dashed var(--border-color);
-    border-top: 1px dashed var(--border-color);
+    border-left: 2px dashed var(--border-color);
+    border-top: 2px dashed var(--border-color);
 }
 
 ::-webkit-scrollbar-thumb {
     background: var(--border-color);
+    border-radius: 0;
+    border: 2px solid var(--bg-color);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--highlight-bg);
+    background: var(--highlight-text);
+    border: 2px solid var(--highlight-bg);
 }
 
 ::-webkit-scrollbar-corner {
